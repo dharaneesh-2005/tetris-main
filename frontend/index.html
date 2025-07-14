@@ -1,0 +1,459 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Multiplayer Tetris</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', 'Roboto', Arial, sans-serif;
+            margin: 0;
+            background-color: #f0f0f0;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+        }
+        h1 {
+            font-size: 3rem;
+            font-weight: 900;
+            text-align: center;
+            margin-bottom: 24px;
+            color: #222;
+            text-shadow: 2px 2px 8px #bbb;
+        }
+        h3 {
+            font-size: 1.5rem;
+            font-weight: 700;
+            margin-bottom: 10px;
+        }
+        .container {
+            display: flex;
+            gap: 20px;
+            justify-content: center;
+            align-items: center;
+            min-height: 70vh;
+            width: 1100px;
+        }
+        .game-area {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+        .board {
+            border: 2px solid #333;
+            background-color: #000;
+            display: inline-block;
+            width: 360px; /* 10 cells × (36px incl. border) */
+            box-sizing: content-box;
+            padding: 0;
+            margin: 0 auto;
+        }
+        .board-row {
+            display: flex;
+            padding: 0;
+            margin: 0;
+        }
+        .board-cell {
+            width: 34px;
+            height: 34px;
+            border: 1px solid #333;
+            background-color: #000;
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+        .board-cell.filled {
+            background-color: #00f;
+        }
+        .board-cell.current {
+            background-color: #f00;
+        }
+        .controls {
+            margin-top: 10px;
+        }
+        .controls button {
+            margin: 4px;
+            padding: 12px 24px;
+            font-size: 22px;
+            font-weight: 700;
+        }
+        .room-info {
+            background-color: white;
+            padding: 10px;
+            border-radius: 5px;
+            margin-bottom: 10px;
+        }
+        .player-list {
+            background-color: white;
+            padding: 10px;
+            border-radius: 5px;
+            margin-bottom: 10px;
+        }
+        .log {
+            background-color: #000;
+            color: #0f0;
+            padding: 16px;
+            height: 300px;
+            overflow-y: auto;
+            font-family: monospace;
+            border-radius: 8px;
+            margin: 32px auto 0 auto;
+            width: 1100px;
+            box-sizing: border-box;
+            display: block;
+            font-size: 18px;
+        }
+        input, button {
+            margin: 2px;
+            padding: 5px;
+        }
+        .error {
+            color: red;
+            font-weight: bold;
+        }
+        .success {
+            color: green;
+            font-weight: bold;
+        }
+        .game-info {
+            background-color: white;
+            padding: 18px;
+            border-radius: 8px;
+            margin-top: 18px;
+            font-size: 22px;
+            font-weight: 600;
+            color: #333;
+        }
+        .level-info {
+            font-size: 32px;
+            font-weight: 900;
+            color: #1976d2;
+            letter-spacing: 1px;
+            margin-bottom: 8px;
+        }
+    </style>
+</head>
+<body>
+    <h1>Multiplayer Tetris</h1>
+    
+    <div class="room-info">
+        <h3>Room Management</h3>
+        <input type="text" id="playerName" placeholder="Player Name" value="Player1">
+        <button onclick="connect()">Connect</button>
+        <button onclick="createRoom()">Create Room</button>
+        <input type="text" id="roomId" placeholder="Room ID">
+        <button onclick="joinRoom()">Join Room</button>
+        <button onclick="startGame()">Start Game</button>
+        <div id="roomStatus">Not connected</div>
+    </div>
+
+    <div class="container">
+        <div class="game-area">
+            <h3>Your Board</h3>
+            <div id="gameBoard" class="board"></div>
+            <div class="controls">
+                <button onclick="moveLeft()">←</button>
+                <button onclick="moveRight()">→</button>
+                <button onclick="moveDown()">↓</button>
+                <button onclick="rotate()">Rotate</button>
+                <button onclick="hardDrop()">Hard Drop</button>
+                <button onclick="hold()">Hold</button>
+            </div>
+            <div class="game-info">
+                <div class="level-info">Level: <span id="level">1</span></div>
+                Score: <span id="score">0</span><br>
+                Lines: <span id="lines">0</span><br>
+                Garbage: <span id="garbage">0</span><br>
+                Drop Speed: <span id="dropSpeed">1.0s</span>
+            </div>
+        </div>
+
+        <div class="player-list">
+            <h3>Players</h3>
+            <div id="playersList"></div>
+        </div>
+    </div>
+
+    <div class="log">
+        <div id="logContent"></div>
+    </div>
+
+    <script>
+        let ws;
+        let playerId;
+        let currentRoom;
+        let gameBoard = [];
+        let currentPiece = null;
+        let gameState = 'waiting';
+        let currentLevel = 1;
+        let dropInterval = 1.0;
+
+        function log(message, type = 'info') {
+            const logDiv = document.getElementById('logContent');
+            const timestamp = new Date().toLocaleTimeString();
+            const className = type === 'error' ? 'error' : type === 'success' ? 'success' : '';
+            logDiv.innerHTML += `<div class="${className}">${timestamp}: ${message}</div>`;
+            logDiv.scrollTop = logDiv.scrollHeight;
+        }
+
+        function connect() {
+            playerId = document.getElementById('playerName').value || 'Player' + Math.random().toString(36).substr(2, 5);
+            ws = new WebSocket(`ws://localhost:8000/ws/${playerId}`);
+            
+            ws.onopen = () => {
+                log('Connected to server', 'success');
+                document.getElementById('roomStatus').textContent = 'Connected';
+            };
+            
+            ws.onmessage = (event) => {
+                const message = JSON.parse(event.data);
+                handleMessage(message);
+            };
+            
+            ws.onclose = () => {
+                log('Disconnected from server', 'error');
+                document.getElementById('roomStatus').textContent = 'Disconnected';
+            };
+
+            ws.onerror = (error) => {
+                log('WebSocket error: ' + error, 'error');
+            };
+        }
+
+        function handleMessage(message) {
+            log('Received: ' + JSON.stringify(message));
+            
+            switch(message.type) {
+                case 'connection':
+                    log('Connection confirmed', 'success');
+                    break;
+                    
+                case 'room_created':
+                case 'room_joined':
+                    currentRoom = message.room_id;
+                    log('Joined room: ' + currentRoom, 'success');
+                    updateRoomState(message.room_state);
+                    break;
+                    
+                case 'game_started':
+                    gameState = 'playing';
+                    log('Game started!', 'success');
+                    updateRoomState(message.room_state);
+                    break;
+                    
+                case 'room_update':
+                    updateRoomState(message.room_state);
+                    break;
+
+                case 'game_update':
+                    updateRoomState(message.room_state);
+                    break;
+                    
+                case 'move_result':
+                    updateGameState(message.result.player_state);
+                    break;
+                    
+                case 'player_move':
+                    // Update other player's state
+                    log('Other player moved');
+                    break;
+                    
+                case 'game_over':
+                    gameState = 'finished';
+                    let winnerMsg = '';
+                    if (message.winner_id) {
+                        winnerMsg = (message.winner_id === playerId)
+                            ? 'Congratulations! You won!'
+                            : 'Game Over! Winner: ' + message.winner_id;
+                    } else {
+                        winnerMsg = 'Game Over! No winner.';
+                    }
+                    log(winnerMsg, 'success');
+                    alert(winnerMsg);
+                    // Optionally, disable controls visually
+                    break;
+                case 'error':
+                    log('Error: ' + message.message, 'error');
+                    break;
+            }
+        }
+
+        function createRoom() {
+            if (!ws || ws.readyState !== WebSocket.OPEN) {
+                log('Not connected', 'error');
+                return;
+            }
+            ws.send(JSON.stringify({
+                type: 'create_room',
+                max_players: 4
+            }));
+        }
+
+        function joinRoom() {
+            if (!ws || ws.readyState !== WebSocket.OPEN) {
+                log('Not connected', 'error');
+                return;
+            }
+            const roomId = document.getElementById('roomId').value.trim();
+            if (!roomId) {
+                log('Enter room ID', 'error');
+                return;
+            }
+            ws.send(JSON.stringify({
+                type: 'join_room',
+                room_id: roomId
+            }));
+        }
+
+        function startGame() {
+            if (!ws || ws.readyState !== WebSocket.OPEN) {
+                log('Not connected', 'error');
+                return;
+            }
+            ws.send(JSON.stringify({
+                type: 'start_game'
+            }));
+        }
+
+        function sendMove(moveType, data = {}) {
+            if (!ws || ws.readyState !== WebSocket.OPEN) {
+                log('Not connected', 'error');
+                return;
+            }
+            if (gameState !== 'playing') {
+                log('Cannot move - not in game', 'error');
+                return;
+            }
+            ws.send(JSON.stringify({
+                type: 'game_move',
+                move: {
+                    type: moveType,
+                    ...data
+                }
+            }));
+        }
+
+        function moveLeft() { sendMove('move', {dx: -1}); }
+        function moveRight() { sendMove('move', {dx: 1}); }
+        function moveDown() { sendMove('soft_drop'); }
+        function rotate() { sendMove('rotate'); }
+        function hardDrop() { sendMove('hard_drop'); }
+        function hold() { sendMove('hold'); }
+
+        // Keyboard controls
+        document.addEventListener('keydown', function(event) {
+            if (gameState !== 'playing') return;
+            
+            switch(event.key) {
+                case 'ArrowLeft':
+                    event.preventDefault();
+                    moveLeft();
+                    break;
+                case 'ArrowRight':
+                    event.preventDefault();
+                    moveRight();
+                    break;
+                case 'ArrowDown':
+                    event.preventDefault();
+                    moveDown();
+                    break;
+                case 'ArrowUp':
+                case ' ':
+                    event.preventDefault();
+                    rotate();
+                    break;
+                case 'Enter':
+                    event.preventDefault();
+                    hardDrop();
+                    break;
+                case 'c':
+                case 'C':
+                    event.preventDefault();
+                    hold();
+                    break;
+            }
+        });
+
+        function updateRoomState(roomState) {
+            const playersList = document.getElementById('playersList');
+            playersList.innerHTML = '';
+            
+            for (const [playerId, playerData] of Object.entries(roomState.players)) {
+                const playerDiv = document.createElement('div');
+                playerDiv.innerHTML = `
+                    <strong>${playerId}</strong><br>
+                    Level: ${playerData.board_state.level}<br>
+                    Score: ${playerData.board_state.score}<br>
+                    Lines: ${playerData.board_state.lines_cleared}<br>
+                    State: ${playerData.board_state.game_state}
+                `;
+                playersList.appendChild(playerDiv);
+            }
+
+            // Update current player's game state
+            if (playerId && roomState.players[playerId]) {
+                updateGameState(roomState.players[playerId].board_state);
+            }
+        }
+
+        function updateGameState(boardState) {
+            gameBoard = boardState.board;
+            currentPiece = boardState.current_piece;
+            currentLevel = boardState.level;
+            dropInterval = boardState.drop_interval;
+            
+            // Update display
+            document.getElementById('score').textContent = boardState.score;
+            document.getElementById('lines').textContent = boardState.lines_cleared;
+            document.getElementById('garbage').textContent = boardState.garbage_lines;
+            document.getElementById('level').textContent = boardState.level;
+            document.getElementById('dropSpeed').textContent = boardState.drop_interval.toFixed(1) + 's';
+            
+            renderBoard();
+        }
+
+        function renderBoard() {
+            const boardDiv = document.getElementById('gameBoard');
+            boardDiv.innerHTML = '';
+            for (let y = 0; y < 20; y++) { // Always 20 rows
+                const row = document.createElement('div');
+                row.className = 'board-row';
+                for (let x = 0; x < 10; x++) { // Always 10 columns
+                    const cell = document.createElement('div');
+                    cell.className = 'board-cell';
+                    if (gameBoard[y] && gameBoard[y][x]) {
+                        cell.classList.add('filled');
+                    }
+                    // Draw current piece
+                    if (currentPiece) {
+                        const pieceShape = currentPiece.shape;
+                        const pieceX = currentPiece.x;
+                        const pieceY = currentPiece.y;
+                        for (let py = 0; py < pieceShape.length; py++) {
+                            for (let px = 0; px < pieceShape[py].length; px++) {
+                                if (pieceShape[py][px] &&
+                                    y === pieceY + py &&
+                                    x === pieceX + px) {
+                                    cell.classList.add('current');
+                                }
+                            }
+                        }
+                    }
+                    row.appendChild(cell);
+                }
+                boardDiv.appendChild(row);
+            }
+        }
+
+        // Initialize board
+        function initBoard() {
+            gameBoard = Array(20).fill().map(() => Array(10).fill(0));
+            renderBoard();
+        }
+
+        // Initialize on load
+        initBoard();
+    </script>
+</body>
+</html> 
