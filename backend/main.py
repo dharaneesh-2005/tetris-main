@@ -123,22 +123,20 @@ async def handle_join_room(player_id: str, message: Dict, websocket) -> Dict:
         return {"type": "error", "message": "Room is full"}
 
 async def handle_create_room(player_id: str, message: Dict, websocket) -> Dict:
-    """Handle room creation."""
+    """Handle room creation. Only the creator can set time_limit_seconds."""
     room_id = str(uuid.uuid4())[:8]  # Short room ID
     max_players = message.get("max_players", 4)
-    
+    time_limit_seconds = message.get("time_limit_seconds", 120)
     # Remove player from previous room if any
     if player_id in player_rooms:
         old_room_id = player_rooms[player_id]
         if old_room_id in rooms:
             rooms[old_room_id].remove_player(player_id)
-    
-    # Create new room
-    room = GameRoom(room_id, max_players)
+    # Create new room with custom time limit and track creator
+    room = GameRoom(room_id, max_players, time_limit_seconds, creator_id=player_id)
     rooms[room_id] = room
     room.add_player(player_id, websocket)
     player_rooms[player_id] = room_id
-    
     return {
         "type": "room_created",
         "room_id": room_id,

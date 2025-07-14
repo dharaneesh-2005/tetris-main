@@ -142,6 +142,7 @@
         <input type="text" id="playerName" placeholder="Player Name" value="Player1">
         <button onclick="connect()">Connect</button>
         <button onclick="createRoom()">Create Room</button>
+        <input type="number" id="timeLimitInput" placeholder="Time Limit (sec)" min="30" max="600" value="120" style="width:140px;">
         <input type="text" id="roomId" placeholder="Room ID">
         <button onclick="joinRoom()">Join Room</button>
         <button onclick="startGame()">Start Game</button>
@@ -165,7 +166,8 @@
                 Score: <span id="score">0</span><br>
                 Lines: <span id="lines">0</span><br>
                 Garbage: <span id="garbage">0</span><br>
-                Drop Speed: <span id="dropSpeed">1.0s</span>
+                Drop Speed: <span id="dropSpeed">1.0s</span><br>
+                <span id="timerBox"></span>
             </div>
         </div>
 
@@ -202,7 +204,7 @@
             ws = new WebSocket(`ws://localhost:8000/ws/${playerId}`);
             
             ws.onopen = () => {
-                log('Connected to server', 'success');
+                log('Connected to server.', 'success');
                 document.getElementById('roomStatus').textContent = 'Connected';
             };
             
@@ -222,56 +224,51 @@
         }
 
         function handleMessage(message) {
-            log('Received: ' + JSON.stringify(message));
-            
+            // Only show user-friendly, essential log messages
             switch(message.type) {
                 case 'connection':
-                    log('Connection confirmed', 'success');
+                    log('Connected to server.', 'success');
                     break;
-                    
                 case 'room_created':
-                case 'room_joined':
                     currentRoom = message.room_id;
-                    log('Joined room: ' + currentRoom, 'success');
+                    log(`Room created. Room ID: <b>${currentRoom}</b>`, 'success');
                     updateRoomState(message.room_state);
                     break;
-                    
+                case 'room_joined':
+                    currentRoom = message.room_id;
+                    log(`Joined room: <b>${currentRoom}</b>`, 'success');
+                    updateRoomState(message.room_state);
+                    break;
+                case 'room_update':
+                    updateRoomState(message.room_state);
+                    break;
                 case 'game_started':
                     gameState = 'playing';
                     log('Game started!', 'success');
                     updateRoomState(message.room_state);
                     break;
-                    
-                case 'room_update':
-                    updateRoomState(message.room_state);
-                    break;
-
                 case 'game_update':
                     updateRoomState(message.room_state);
                     break;
-                    
                 case 'move_result':
                     updateGameState(message.result.player_state);
                     break;
-                    
                 case 'player_move':
-                    // Update other player's state
-                    log('Other player moved');
+                    // Optionally, show a simple message
+                    // log('Another player made a move.');
                     break;
-                    
                 case 'game_over':
                     gameState = 'finished';
                     let winnerMsg = '';
                     if (message.winner_id) {
                         winnerMsg = (message.winner_id === playerId)
                             ? 'Congratulations! You won!'
-                            : 'Game Over! Winner: ' + message.winner_id;
+                            : `Game Over! Winner: <b>${message.winner_id}</b>`;
                     } else {
                         winnerMsg = 'Game Over! No winner.';
                     }
                     log(winnerMsg, 'success');
-                    alert(winnerMsg);
-                    // Optionally, disable controls visually
+                    alert(winnerMsg.replace(/<[^>]+>/g, ''));
                     break;
                 case 'error':
                     log('Error: ' + message.message, 'error');
@@ -284,9 +281,11 @@
                 log('Not connected', 'error');
                 return;
             }
+            const timeLimit = parseInt(document.getElementById('timeLimitInput').value, 10) || 120;
             ws.send(JSON.stringify({
                 type: 'create_room',
-                max_players: 4
+                max_players: 4,
+                time_limit_seconds: timeLimit
             }));
         }
 
@@ -394,6 +393,13 @@
             // Update current player's game state
             if (playerId && roomState.players[playerId]) {
                 updateGameState(roomState.players[playerId].board_state);
+            }
+            // Update timer display if present
+            const timerBox = document.getElementById('timerBox');
+            if (timerBox && typeof roomState.remaining_time !== 'undefined') {
+                timerBox.textContent = `Time left: ${roomState.remaining_time}s`;
+            } else if (timerBox) {
+                timerBox.textContent = '';
             }
         }
 

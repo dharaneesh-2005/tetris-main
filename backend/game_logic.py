@@ -150,12 +150,10 @@ class TetrisGame:
         while self.is_valid_move(0, 1):
             self.current_y += 1
             drop_distance += 1
-        
         # Add score for hard drop (2 points per line dropped)
         self.score += drop_distance * 2
-        
         return self.place_piece()
-    
+
     def soft_drop(self) -> bool:
         """Drop the piece one line down."""
         success = self.move_piece(0, 1)
@@ -163,12 +161,11 @@ class TetrisGame:
             # Add score for soft drop (1 point per line)
             self.score += 1
         return success
-    
+
     def auto_drop(self) -> int:
         """Automatically drop the piece based on time and level."""
         if self.game_state != GameState.PLAYING or not self.current_piece:
             return 0
-        
         current_time = time.time()
         if current_time - self.last_drop_time >= self.drop_interval:
             if not self.move_piece(0, 1):
@@ -179,6 +176,8 @@ class TetrisGame:
                 # If the game is finished after placing, return a special value
                 return lines_cleared
             else:
+                # Add score for auto drop (1 point per line)
+                self.score += 1
                 self.last_drop_time = current_time
         return 0
     
@@ -294,7 +293,7 @@ class TetrisGame:
         }
 
 class GameRoom:
-    def __init__(self, room_id: str, max_players: int = 4):
+    def __init__(self, room_id: str, max_players: int = 4, time_limit_seconds: int = 120, creator_id: str = None):
         self.room_id = room_id
         self.max_players = max_players
         self.players: Dict[str, TetrisGame] = {}
@@ -302,6 +301,10 @@ class GameRoom:
         self.game_state = GameState.WAITING
         self.connections: Dict[str, any] = {}  # WebSocket connections
         self.game_task = None
+        self.time_limit_seconds = time_limit_seconds  # time limit in seconds
+        self.start_time = None  # game start time
+        self.remaining_time = time_limit_seconds  # remaining time in seconds
+        self.creator_id = creator_id  # NEW: track room creator
         
     def add_player(self, player_id: str, websocket) -> bool:
         """Add a player to the room."""
@@ -325,15 +328,14 @@ class GameRoom:
         """Start the game if enough players."""
         if len(self.players) < 2:
             return False
-        
         self.game_state = GameState.PLAYING
+        self.start_time = time.time()  # NEW: record start time
+        self.remaining_time = self.time_limit_seconds  # NEW: reset remaining time
         for player in self.players.values():
             player.game_state = GameState.PLAYING
             player.new_piece()
-        
         # Start the game loop
         await self.start_game_loop()
-        
         return True
     
     async def check_and_broadcast_game_over(self):
@@ -363,7 +365,6 @@ class GameRoom:
         async def game_loop():
             while self.game_state == GameState.PLAYING:
                 await asyncio.sleep(0.1)  # Check every 100ms for smoother gameplay
-                
                 # Auto-drop for all players based on their individual timers
                 for player_id, game in self.players.items():
                     if game.game_state == GameState.PLAYING:
@@ -373,7 +374,13 @@ class GameRoom:
                         # If the game just finished for this player, check for game over
                         if game.game_state == GameState.FINISHED:
                             await self.check_and_broadcast_game_over()
-                
+                # Time check (NEW)
+                if self.start_time is not None:
+                    elapsed = time.time() - self.start_time
+                    self.remaining_time = max(0, self.time_limit_seconds - int(elapsed))
+                    if elapsed >= self.time_limit_seconds:
+                        await self.end_game_by_time()
+                        break
                 # Broadcast updated state after all auto-drops
                 await self.broadcast({
                     "type": "game_update",
@@ -381,7 +388,6 @@ class GameRoom:
                 })
                 # Also check for game over in case all are finished
                 await self.check_and_broadcast_game_over()
-        
         # Start the game loop
         asyncio.create_task(game_loop())
     
@@ -449,6 +455,27 @@ class GameRoom:
                 if other_id != player_id and other_game.game_state == GameState.PLAYING:
                     other_game.add_garbage_lines(garbage_lines)
     
+    async def end_game_by_time(self):
+        """End the game due to time limit and determine winner by score."""
+        self.game_state = GameState.FINISHED
+        # Find the player(s) with the highest score who are not eliminated
+        max_score = -1
+        winners = []
+        for pid, game in self.players.items():
+            if game.game_state != GameState.FINISHED:
+                if game.score > max_score:
+                    max_score = game.score
+                    winners = [pid]
+                elif game.score == max_score:
+                    winners.append(pid)
+        winner_id = winners[0] if len(winners) == 1 else None  # None for tie
+        await self.broadcast({
+            "type": "game_over",
+            "winner_id": winner_id,
+            "room_state": self.get_room_state(),
+            "reason": "time_up"
+        })
+    
     def get_room_state(self) -> Dict:
         """Get the current state of the room."""
         return {
@@ -456,7 +483,10 @@ class GameRoom:
             'game_state': self.game_state.value,
             'players': {pid: game.to_dict() for pid, game in self.players.items()},
             'spectators': self.spectators,
-            'max_players': self.max_players
+            'max_players': self.max_players,
+            'remaining_time': self.remaining_time,  # broadcast remaining time
+            'time_limit_seconds': self.time_limit_seconds,  # always show time limit
+            'creator_id': self.creator_id  # show who created the room
         }
     
     async def broadcast(self, message: Dict, exclude_player: str = None):
