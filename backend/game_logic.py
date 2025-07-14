@@ -19,6 +19,7 @@ class GameState(Enum):
     PLAYING = "playing"
     FINISHED = "finished"
 
+
 class TetrisGame:
     BOARD_WIDTH = 10
     BOARD_HEIGHT = 20
