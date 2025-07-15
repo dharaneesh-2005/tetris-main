@@ -379,7 +379,7 @@
 
         function connect() {
             playerId = document.getElementById('playerName').value || 'Player' + Math.random().toString(36).substr(2, 5);
-            ws = new WebSocket(`ws://location.host:8000/ws/${playerId}`);
+            ws = new WebSocket(`https://location.host:8000/ws/${playerId}`);
             
             ws.onopen = () => {
                 log('Connected to server.', 'success');
