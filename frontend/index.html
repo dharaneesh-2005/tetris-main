@@ -379,23 +379,23 @@
 
         function connect() {
             playerId = document.getElementById('playerName').value || 'Player' + Math.random().toString(36).substr(2, 5);
-            // Use dynamic WebSocket URL for local and production
-            let wsProtocol = location.protocol === 'https:' ? 'wss:' : 'ws:';
-            let wsHost = location.hostname;
-            let wsPort = (location.port && (wsHost === 'localhost' || wsHost === '127.0.0.1')) ? ':' + location.port : '';
-            ws = new WebSocket(`${wsProtocol}//${wsHost}${wsPort}/ws/${playerId}`);
+            ws = new WebSocket(`ws://location.host:8000/ws/${playerId}`);
+            
             ws.onopen = () => {
                 log('Connected to server.', 'success');
                 document.getElementById('roomStatus').textContent = 'Connected';
             };
+            
             ws.onmessage = (event) => {
                 const message = JSON.parse(event.data);
                 handleMessage(message);
             };
+            
             ws.onclose = () => {
                 log('Disconnected from server', 'error');
                 document.getElementById('roomStatus').textContent = 'Disconnected';
             };
+
             ws.onerror = (error) => {
                 log('WebSocket error: ' + error, 'error');
             };
