@@ -379,7 +379,7 @@
 
         function connect() {
             playerId = document.getElementById('playerName').value || 'Player' + Math.random().toString(36).substr(2, 5);
-            ws = new WebSocket(`wss://0.0.0.0:10000/ws/${playerId}`);
+            ws = new WebSocket(`wss://tetris-main.onrender.com:10000/ws/${playerId}`);
             ws.onopen = () => {
                 log('Connected to server.', 'success');
                 document.getElementById('roomStatus').textContent = 'Connected';
