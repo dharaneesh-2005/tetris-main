@@ -379,8 +379,16 @@
 
         function connect() {
             playerId = document.getElementById('playerName').value || 'Player' + Math.random().toString(36).substr(2, 5);
-            const ws = new WebSocket(`wss://${location.host}/ws/${playerId}`);
+            
+            // Dynamically determine the WebSocket protocol (ws or wss)
+            const wsScheme = window.location.protocol === "https:" ? "wss" : "ws";
+            // Use the host from the browser's location bar. 
+            // This correctly includes the port in development (e.g., localhost:8000) 
+            // and omits it in production (e.g., yourdomain.com).
+            const wsHost = window.location.host; 
+            ws = new WebSocket(`${wsScheme}://${wsHost}/ws/${playerId}`);
 
+            console.log("Connecting to WebSocket at:", ws.url);
             
             ws.onopen = () => {
                 log('Connected to server.', 'success');
@@ -824,6 +832,6 @@ function animateArcadeBG() {
     requestAnimationFrame(animateArcadeBG);
 }
 animateArcadeBG();
-    </script>
+</script>
 </body>
-</html> 
+</html>
