@@ -4,50 +4,159 @@
     <meta charset="UTF-8">
     <title>Multiplayer Tetris</title>
     <style>
-        body {
-            font-family: 'Segoe UI', 'Roboto', Arial, sans-serif;
+        html, body {
+            height: 100%;
             margin: 0;
-            background-color: #f0f0f0;
+            padding: 0;
+        }
+        body {
+            font-family: 'Orbitron', 'Segoe UI', 'Roboto', Arial, sans-serif;
             min-height: 100vh;
             display: flex;
             flex-direction: column;
-            justify-content: center;
+            justify-content: flex-start;
             align-items: center;
+            background: #0a0a23;
+            overflow-x: hidden;
+        }
+        #main-content {
+            flex: 1 0 auto;
+            width: 100vw;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: flex-start;
+            min-height: 0;
+        }
+        /* Starfield animation */
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            z-index: 0;
+            pointer-events: none;
+            background: transparent;
+            animation: starfield 60s linear infinite;
+        }
+        @keyframes starfield {
+            0% { box-shadow:
+                100vw 10vh 1px 1px #fff,
+                80vw 20vh 2px 2px #0ff,
+                60vw 30vh 1px 1px #fff,
+                40vw 40vh 2px 2px #0ff,
+                20vw 50vh 1px 1px #fff,
+                10vw 60vh 2px 2px #0ff;
+            }
+            100% { box-shadow:
+                100vw 110vh 1px 1px #fff,
+                80vw 120vh 2px 2px #0ff,
+                60vw 130vh 1px 1px #fff,
+                40vw 140vh 2px 2px #0ff,
+                20vw 150vh 1px 1px #fff,
+                10vw 160vh 2px 2px #0ff;
+            }
+        }
+        /* Spaceship animation (CSS only, subtle) */
+        .spaceship {
+            position: fixed;
+            left: 50%;
+            bottom: 10vh;
+            width: 80px;
+            height: 80px;
+            z-index: 1;
+            transform: translateX(-50%);
+            animation: spaceship-float 4s ease-in-out infinite;
+            opacity: 0.7;
+        }
+        @keyframes spaceship-float {
+            0%, 100% { transform: translateX(-50%) translateY(0); }
+            50% { transform: translateX(-50%) translateY(-20px); }
+        }
+        .spaceship-body {
+            width: 80px; height: 40px;
+            background: linear-gradient(90deg, #0ff 0%, #fff 100%);
+            border-radius: 40px 40px 20px 20px;
+            position: absolute; bottom: 0; left: 0;
+            box-shadow: 0 0 30px 10px #0ff8, 0 0 10px 2px #fff8;
+        }
+        .spaceship-cockpit {
+            width: 24px; height: 24px;
+            background: #fff;
+            border-radius: 50%;
+            position: absolute; left: 28px; top: 2px;
+            box-shadow: 0 0 10px 2px #0ff8;
+        }
+        .spaceship-flame {
+            width: 16px; height: 32px;
+            background: linear-gradient(180deg, #ff0 0%, #f00 100%);
+            border-radius: 50% 50% 60% 60%/60% 60% 100% 100%;
+            position: absolute; left: 32px; bottom: -24px;
+            opacity: 0.7;
+            filter: blur(1px);
+            animation: flame-flicker 0.3s infinite alternate;
+        }
+        @keyframes flame-flicker {
+            0% { opacity: 0.7; height: 32px; }
+            100% { opacity: 1; height: 40px; }
         }
         h1 {
             font-size: 3rem;
             font-weight: 900;
             text-align: center;
             margin-bottom: 24px;
-            color: #222;
-            text-shadow: 2px 2px 8px #bbb;
+            color: #0ff;
+            text-shadow: 0 0 16px #0ff, 0 0 32px #fff, 2px 2px 8px #222;
+            letter-spacing: 2px;
+            font-family: 'Orbitron', 'Segoe UI', 'Roboto', Arial, sans-serif;
         }
         h3 {
             font-size: 1.5rem;
             font-weight: 700;
             margin-bottom: 10px;
+            color: #fff;
+            text-shadow: 0 0 8px #0ff, 0 0 4px #fff;
         }
         .container {
             display: flex;
             gap: 20px;
             justify-content: center;
-            align-items: center;
-            min-height: 70vh;
+            align-items: flex-start;
+            min-height: 0;
             width: 1100px;
+            max-width: 98vw;
+            margin-bottom: 16px;
+        }
+        .game-area, .player-list, .room-info {
+            max-width: 100%;
+            box-sizing: border-box;
         }
         .game-area {
-            display: flex;
-            flex-direction: column;
-            gap: 10px;
+            min-width: 400px;
+            max-width: 400px;
+        }
+        .game-area, .player-list, .room-info {
+            background: rgba(10, 10, 40, 0.85);
+            border: 2px solid #0ff;
+            border-radius: 16px;
+            box-shadow: 0 0 24px 4px #0ff4, 0 0 8px 2px #fff4;
+            padding: 18px;
+            margin-bottom: 10px;
+            transition: box-shadow 0.3s, background 0.3s;
+        }
+        .game-area:hover, .player-list:hover, .room-info:hover {
+            box-shadow: 0 0 48px 8px #0ff8, 0 0 16px 4px #fff8;
+            background: rgba(10, 10, 60, 0.95);
         }
         .board {
-            border: 2px solid #333;
-            background-color: #000;
+            border: 2px solid #0ff;
+            background-color: #000a;
             display: inline-block;
-            width: 360px; /* 10 cells × (36px incl. border) */
+            width: 360px;
             box-sizing: content-box;
             padding: 0;
             margin: 0 auto;
+            border-radius: 8px;
+            box-shadow: 0 0 16px 2px #0ff8;
         }
         .board-row {
             display: flex;
@@ -62,118 +171,167 @@
             box-sizing: border-box;
             margin: 0;
             padding: 0;
+            transition: background 0.2s;
         }
         .board-cell.filled {
-            background-color: #00f;
+            background-color: #0ff;
+            box-shadow: 0 0 8px 2px #0ff8;
         }
         .board-cell.current {
-            background-color: #f00;
-        }
-        .controls {
-            margin-top: 10px;
+            background-color: #fff;
+            box-shadow: 0 0 12px 4px #fff8;
         }
         .controls button {
             margin: 4px;
             padding: 12px 24px;
             font-size: 22px;
             font-weight: 700;
+            background: linear-gradient(90deg, #0ff 0%, #00f 100%);
+            color: #fff;
+            border: none;
+            border-radius: 8px;
+            box-shadow: 0 0 8px 2px #0ff8;
+            cursor: pointer;
+            transition: background 0.2s, box-shadow 0.2s;
         }
-        .room-info {
-            background-color: white;
-            padding: 10px;
-            border-radius: 5px;
-            margin-bottom: 10px;
-        }
-        .player-list {
-            background-color: white;
-            padding: 10px;
-            border-radius: 5px;
-            margin-bottom: 10px;
+        .controls button:hover {
+            background: linear-gradient(90deg, #fff 0%, #0ff 100%);
+            color: #0ff;
+            box-shadow: 0 0 16px 4px #0ff8;
         }
         .log {
-            background-color: #000;
-            color: #0f0;
+            background-color: #000a;
+            color: #0ff;
             padding: 16px;
-            height: 300px;
+            max-height: 220px;
+            min-height: 120px;
             overflow-y: auto;
-            font-family: monospace;
+            font-family: 'Share Tech Mono', monospace;
             border-radius: 8px;
-            margin: 32px auto 0 auto;
+            margin: 0 auto 16px auto;
             width: 1100px;
+            max-width: 98vw;
             box-sizing: border-box;
             display: block;
             font-size: 18px;
+            border: 2px solid #0ff;
+            box-shadow: 0 0 16px 2px #0ff8;
+            flex-shrink: 0;
+        }
+        #logContent {
+            height: 100%;
+            max-height: 180px;
+            overflow-y: auto;
         }
         input, button {
             margin: 2px;
             padding: 5px;
+            border-radius: 6px;
+            border: 1px solid #0ff;
+            background: #111a;
+            color: #0ff;
+            font-size: 18px;
+            font-family: 'Orbitron', 'Segoe UI', 'Roboto', Arial, sans-serif;
+            box-shadow: 0 0 4px 1px #0ff4;
+            transition: border 0.2s, box-shadow 0.2s;
+        }
+        input:focus, button:focus {
+            outline: none;
+            border: 2px solid #fff;
+            box-shadow: 0 0 8px 2px #fff8;
         }
         .error {
-            color: red;
+            color: #f55;
             font-weight: bold;
+            text-shadow: 0 0 4px #f008;
         }
         .success {
-            color: green;
+            color: #0f0;
             font-weight: bold;
+            text-shadow: 0 0 4px #0f08;
         }
         .game-info {
-            background-color: white;
+            background-color: #000a;
             padding: 18px;
             border-radius: 8px;
             margin-top: 18px;
             font-size: 22px;
             font-weight: 600;
-            color: #333;
+            color: #0ff;
+            border: 2px solid #0ff;
+            box-shadow: 0 0 12px 2px #0ff8;
         }
         .level-info {
             font-size: 32px;
             font-weight: 900;
-            color: #1976d2;
+            color: #fff;
             letter-spacing: 1px;
             margin-bottom: 8px;
+            text-shadow: 0 0 8px #0ff, 0 0 4px #fff;
+        }
+        @media (max-width: 1200px) {
+            .container, .log {
+                width: 98vw;
+                max-width: 98vw;
+            }
+        }
+        @media (max-width: 800px) {
+            .container {
+                flex-direction: column;
+                align-items: center;
+                width: 100vw;
+            }
+            .game-area, .player-list, .room-info {
+                max-width: 98vw;
+                min-width: 0;
+            }
         }
     </style>
 </head>
 <body>
     <h1>Multiplayer Tetris</h1>
+    <!-- Arcade animated background canvas -->
+    <canvas id="arcade-bg" style="position:fixed;top:0;left:0;width:100vw;height:100vh;z-index:0;pointer-events:none;"></canvas>
     
-    <div class="room-info">
-        <h3>Room Management</h3>
-        <input type="text" id="playerName" placeholder="Player Name" value="Player1">
-        <button onclick="connect()">Connect</button>
-        <button onclick="createRoom()">Create Room</button>
-        <input type="number" id="timeLimitInput" placeholder="Time Limit (sec)" min="30" max="600" value="120" style="width:140px;">
-        <input type="text" id="roomId" placeholder="Room ID">
-        <button onclick="joinRoom()">Join Room</button>
-        <button onclick="startGame()">Start Game</button>
-        <div id="roomStatus">Not connected</div>
-    </div>
-
-    <div class="container">
-        <div class="game-area">
-            <h3>Your Board</h3>
-            <div id="gameBoard" class="board"></div>
-            <div class="controls">
-                <button onclick="moveLeft()">←</button>
-                <button onclick="moveRight()">→</button>
-                <button onclick="moveDown()">↓</button>
-                <button onclick="rotate()">Rotate</button>
-                <button onclick="hardDrop()">Hard Drop</button>
-                <button onclick="hold()">Hold</button>
-            </div>
-            <div class="game-info">
-                <div class="level-info">Level: <span id="level">1</span></div>
-                Score: <span id="score">0</span><br>
-                Lines: <span id="lines">0</span><br>
-                Garbage: <span id="garbage">0</span><br>
-                Drop Speed: <span id="dropSpeed">1.0s</span><br>
-                <span id="timerBox"></span>
-            </div>
+    <div id="main-content">
+        <div class="room-info">
+            <h3>Room Management</h3>
+            <input type="text" id="playerName" placeholder="Player Name" value="Player1">
+            <button onclick="connect()">Connect</button>
+            <button onclick="createRoom()">Create Room</button>
+            <input type="number" id="timeLimitInput" placeholder="Time Limit (sec)" min="30" max="600" value="120" style="width:140px;">
+            <input type="text" id="roomId" placeholder="Room ID">
+            <button onclick="joinRoom()">Join Room</button>
+            <button onclick="startGame()">Start Game</button>
+            <div id="roomStatus">Not connected</div>
         </div>
 
-        <div class="player-list">
-            <h3>Players</h3>
-            <div id="playersList"></div>
+        <div class="container">
+            <div class="game-area">
+                <h3>Your Board</h3>
+                <div id="gameBoard" class="board"></div>
+                <div class="controls">
+                    <button onclick="moveLeft()">←</button>
+                    <button onclick="moveRight()">→</button>
+                    <button onclick="moveDown()">↓</button>
+                    <button onclick="rotate()">Rotate</button>
+                    <button onclick="hardDrop()">Hard Drop</button>
+                    <button onclick="hold()">Hold</button>
+                </div>
+                <div class="game-info">
+                    <div class="level-info">Level: <span id="level">1</span></div>
+                    Score: <span id="score">0</span><br>
+                    Lines: <span id="lines">0</span><br>
+                    Garbage: <span id="garbage">0</span><br>
+                    Drop Speed: <span id="dropSpeed">1.0s</span><br>
+                    <span id="timerBox"></span>
+                </div>
+            </div>
+
+            <div class="player-list">
+                <h3>Players</h3>
+                <div id="playersList"></div>
+            </div>
         </div>
     </div>
 
@@ -460,6 +618,131 @@
 
         // Initialize on load
         initBoard();
+
+        // Arcade background animation: spaceship and asteroids
+        const canvas = document.getElementById('arcade-bg');
+        const ctx = canvas.getContext('2d');
+        let w = window.innerWidth;
+        let h = window.innerHeight;
+        canvas.width = w;
+        canvas.height = h;
+        window.addEventListener('resize', () => {
+            w = window.innerWidth;
+            h = window.innerHeight;
+            canvas.width = w;
+            canvas.height = h;
+        });
+        // Spaceship
+        const ship = {
+            x: w/2, y: h*0.7, vx: 2, vy: 0, angle: 0, size: 48
+        };
+        // Asteroids
+        function randomAsteroid() {
+            const size = 32 + Math.random()*32;
+            return {
+                x: Math.random()*w,
+                y: -size,
+                vx: (Math.random()-0.5)*1.5,
+                vy: 1+Math.random()*2,
+                size,
+                angle: Math.random()*Math.PI*2,
+                spin: (Math.random()-0.5)*0.02
+            };
+        }
+        let asteroids = Array.from({length: 8}, randomAsteroid);
+        function drawSpaceship(ctx, x, y, angle, size) {
+            ctx.save();
+            ctx.translate(x, y);
+            ctx.rotate(angle);
+            ctx.scale(size/64, size/64);
+            // Body
+            ctx.beginPath();
+            ctx.moveTo(0, -32);
+            ctx.lineTo(20, 24);
+            ctx.lineTo(0, 12);
+            ctx.lineTo(-20, 24);
+            ctx.closePath();
+            ctx.fillStyle = '#0ff';
+            ctx.shadowColor = '#0ff';
+            ctx.shadowBlur = 16;
+            ctx.fill();
+            ctx.shadowBlur = 0;
+            // Cockpit
+            ctx.beginPath();
+            ctx.arc(0, -16, 8, 0, Math.PI*2);
+            ctx.fillStyle = '#fff';
+            ctx.globalAlpha = 0.8;
+            ctx.fill();
+            ctx.globalAlpha = 1;
+            // Flame
+            ctx.save();
+            ctx.translate(0, 28);
+            ctx.rotate(Math.sin(Date.now()/120)*0.2);
+            ctx.beginPath();
+            ctx.moveTo(0, 0);
+            ctx.lineTo(6, 24);
+            ctx.lineTo(-6, 24);
+            ctx.closePath();
+            ctx.fillStyle = 'orange';
+            ctx.globalAlpha = 0.7+0.3*Math.random();
+            ctx.shadowColor = 'yellow';
+            ctx.shadowBlur = 16;
+            ctx.fill();
+            ctx.globalAlpha = 1;
+            ctx.shadowBlur = 0;
+            ctx.restore();
+            ctx.restore();
+        }
+        function drawAsteroid(ctx, x, y, size, angle) {
+            ctx.save();
+            ctx.translate(x, y);
+            ctx.rotate(angle);
+            ctx.beginPath();
+            for (let i=0; i<8; ++i) {
+                const r = size*0.7 + Math.sin(i*0.8+angle)*size*0.2;
+                const a = i*Math.PI/4;
+                ctx.lineTo(Math.cos(a)*r, Math.sin(a)*r);
+            }
+            ctx.closePath();
+            ctx.fillStyle = '#888';
+            ctx.globalAlpha = 0.7;
+            ctx.shadowColor = '#fff';
+            ctx.shadowBlur = 8;
+            ctx.fill();
+            ctx.globalAlpha = 1;
+            ctx.shadowBlur = 0;
+            ctx.restore();
+        }
+        function animateArcadeBG() {
+            ctx.clearRect(0,0,w,h);
+            // Starfield
+            for (let i=0; i<80; ++i) {
+                ctx.beginPath();
+                ctx.arc(Math.random()*w, Math.random()*h, Math.random()*1.5+0.5, 0, Math.PI*2);
+                ctx.fillStyle = Math.random()<0.5 ? '#fff' : '#0ff';
+                ctx.globalAlpha = 0.2+Math.random()*0.5;
+                ctx.fill();
+                ctx.globalAlpha = 1;
+            }
+            // Asteroids
+            for (const a of asteroids) {
+                drawAsteroid(ctx, a.x, a.y, a.size, a.angle);
+                a.x += a.vx;
+                a.y += a.vy;
+                a.angle += a.spin;
+                if (a.y > h+80 || a.x < -80 || a.x > w+80) {
+                    Object.assign(a, randomAsteroid());
+                    a.y = -a.size;
+                }
+            }
+            // Spaceship
+            ship.x += ship.vx;
+            if (ship.x > w-80) ship.vx = -2;
+            if (ship.x < 80) ship.vx = 2;
+            drawSpaceship(ctx, ship.x, ship.y, ship.angle, ship.size);
+            requestAnimationFrame(animateArcadeBG);
+        }
+        animateArcadeBG();
     </script>
 </body>
 </html> 
