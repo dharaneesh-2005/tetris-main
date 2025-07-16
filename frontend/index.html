@@ -549,13 +549,16 @@
                     moveDown();
                     break;
                 case 'ArrowUp':
-                case ' ':
                     event.preventDefault();
                     rotate();
                     break;
-                case 'Enter':
+                case ' ':
                     event.preventDefault();
                     hardDrop();
+                    break;
+                case 'Enter':
+                    event.preventDefault();
+                    // (Optional: assign to another action or leave empty)
                     break;
                 case 'c':
                 case 'C':
