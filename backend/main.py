@@ -20,7 +20,7 @@ app.add_middleware(
 )
 
 # Serve static files (for the frontend)
-app.mount("/static", StaticFiles(directory="../frontend"), name="static")
+app.mount("/static", StaticFiles(directory="static"), name="static")
 
 # Global room management
 rooms: Dict[str, GameRoom] = {}
@@ -30,7 +30,7 @@ player_rooms: Dict[str, str] = {}  # player_id -> room_id
 async def get_index():
     """Serve the main game page."""
     try:
-        with open("../frontend/index.html", "r", encoding="utf-8") as f:
+        with open("static/index.html", "r", encoding="utf-8") as f:
             return HTMLResponse(content=f.read())
     except FileNotFoundError:
         return HTMLResponse(content="<h1>Game file not found</h1>", status_code=404)
@@ -230,4 +230,4 @@ async def list_rooms():
     }
 
 if __name__ == "__main__":
-    uvicorn.run("main:app", host="0.0.0.0", port=10000, reload=True) 
+    uvicorn.run("main:app", host="0.0.0.0", port=8000, reload=True) 
