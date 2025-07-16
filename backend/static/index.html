@@ -190,13 +190,55 @@
         }
         .container {
             display: flex;
-            gap: 20px;
+            flex-direction: row;
+            gap: 32px;
             justify-content: center;
             align-items: flex-start;
             min-height: 0;
-            width: 1100px;
+            width: 1400px;
             max-width: 98vw;
             margin-bottom: 16px;
+        }
+        .new-layout .room-info {
+            min-width: 220px;
+            max-width: 260px;
+            flex: 0 0 240px;
+            margin-right: 0;
+        }
+        .new-layout .game-area {
+            min-width: 520px;
+            max-width: 520px;
+            flex: 1 1 520px;
+            margin: 0 0 0 0;
+        }
+        .new-layout .board {
+            width: 480px;
+            min-width: 480px;
+            max-width: 480px;
+            height: auto;
+        }
+        .new-layout .controls {
+            margin-top: 18px;
+        }
+        .side-info {
+            display: flex;
+            flex-direction: column;
+            gap: 24px;
+            min-width: 220px;
+            max-width: 260px;
+            flex: 0 0 240px;
+        }
+        .side-info .game-info {
+            background: rgba(10, 10, 40, 0.85);
+            border: 2px solid #0ff;
+            border-radius: 16px;
+            box-shadow: 0 0 24px 4px #0ff4, 0 0 8px 2px #fff4;
+            padding: 18px;
+            margin-bottom: 10px;
+            font-size: 1.1em;
+        }
+        .side-info .player-list {
+            margin: 0;
         }
         .game-area, .player-list, .room-info {
             max-width: 100%;
@@ -368,6 +410,15 @@
                 width: 98vw;
                 max-width: 98vw;
             }
+            .new-layout .game-area {
+                min-width: 340px;
+                max-width: 98vw;
+            }
+            .new-layout .board {
+                width: 320px;
+                min-width: 320px;
+                max-width: 320px;
+            }
         }
         @media (max-width: 800px) {
             .container {
@@ -375,7 +426,7 @@
                 align-items: center;
                 width: 100vw;
             }
-            .game-area, .player-list, .room-info {
+            .new-layout .game-area, .new-layout .side-info, .new-layout .room-info {
                 max-width: 98vw;
                 min-width: 0;
             }
@@ -392,19 +443,18 @@
     <h1>Multiplayer Tetris</h1>
     
     <div id="main-content">
-        <div class="room-info">
-            <h3>Room Management</h3>
-            <input type="text" id="playerName" placeholder="Player Name" value="Player1">
-            <button onclick="connect()">Connect</button>
-            <button onclick="createRoom()">Create Room</button>
-            <input type="number" id="timeLimitInput" placeholder="Time Limit (sec)" min="30" max="600" value="120" style="width:140px;">
-            <input type="text" id="roomId" placeholder="Room ID">
-            <button onclick="joinRoom()">Join Room</button>
-            <button onclick="startGame()">Start Game</button>
-            <div id="roomStatus">Not connected</div>
-        </div>
-
-        <div class="container">
+        <div class="container new-layout">
+            <div class="room-info">
+                <h3>Room Management</h3>
+                <input type="text" id="playerName" placeholder="Player Name" value="Player1">
+                <button onclick="connect()">Connect</button>
+                <button onclick="createRoom()">Create Room</button>
+                <input type="number" id="timeLimitInput" placeholder="Time Limit (sec)" min="30" max="600" value="120" style="width:140px;">
+                <input type="text" id="roomId" placeholder="Room ID">
+                <button onclick="joinRoom()">Join Room</button>
+                <button onclick="startGame()">Start Game</button>
+                <div id="roomStatus">Not connected</div>
+            </div>
             <div class="game-area">
                 <h3>Your Board</h3>
                 <div id="gameBoard" class="board"></div>
@@ -415,6 +465,8 @@
                     <button onclick="rotate()" title="Rotate (↑)">⟳</button>
                     <button onclick="hardDrop()" title="Hard Drop (Space)">⎵</button>
                 </div>
+            </div>
+            <div class="side-info">
                 <div class="game-info">
                     <div class="level-info">Level: <span id="level">1</span></div>
                     Score: <span id="score">0</span><br>
@@ -423,11 +475,10 @@
                     Drop Speed: <span id="dropSpeed">1.0s</span><br>
                     <span id="timerBox"></span>
                 </div>
-            </div>
-
-            <div class="player-list">
-                <h3>Players</h3>
-                <div id="playersList"></div>
+                <div class="player-list">
+                    <h3>Players</h3>
+                    <div id="playersList"></div>
+                </div>
             </div>
         </div>
     </div>
