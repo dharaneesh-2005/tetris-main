@@ -16,8 +16,46 @@
             flex-direction: column;
             justify-content: flex-start;
             align-items: center;
-            background: #0a0a23;
-            overflow-x: hidden;
+            /* Softer, more balanced gradient */
+            background: linear-gradient(135deg, #0a1a2f 0%, #1a2a4f 60%, #2f3a5f 100%);
+            background-attachment: fixed;
+            position: relative;
+        }
+        /* Subtle geometric overlay: hexagons */
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            z-index: 0;
+            pointer-events: none;
+            /* Hexagon pattern using SVG data URI */
+            background-image:
+                url('data:image/svg+xml;utf8,<svg width="60" height="52" viewBox="0 0 60 52" fill="none" xmlns="http://www.w3.org/2000/svg"><polygon points="30,2 58,15 58,39 30,52 2,39 2,15" fill="%230ff2" stroke="%230ff5" stroke-width="2"/></svg>'),
+                radial-gradient(circle, #fff8 1px, transparent 1px),
+                radial-gradient(circle, #0ff4 1px, transparent 1px);
+            background-size: 120px 104px, 60px 60px, 120px 120px;
+            background-position: 0 0, 30px 30px, 60px 60px;
+            opacity: 0.18;
+        }
+        /* Remove overflow-x: hidden; */
+        /* Remove old background and add vibrant static background */
+        /* Add a subtle pattern overlay for vibrancy */
+        /* Optional: Add a static star pattern overlay */
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            z-index: 0;
+            pointer-events: none;
+            background-image: radial-gradient(circle, #fff8 1px, transparent 1px),
+                              radial-gradient(circle, #0ff8 1px, transparent 1px);
+            background-size: 60px 60px, 120px 120px;
+            background-position: 0 0, 30px 30px;
+            opacity: 0.25;
+        }
+        /* Remove spaceship and animation CSS */
+        .spaceship, .spaceship-body, .spaceship-cockpit, .spaceship-flame {
+            display: none !important;
         }
         #main-content {
             flex: 1 0 auto;
@@ -311,8 +349,6 @@
 </head>
 <body>
     <h1>Multiplayer Tetris</h1>
-    <!-- Arcade animated background canvas -->
-    <canvas id="arcade-bg" style="position:fixed;top:0;left:0;width:100vw;height:100vh;z-index:-1;pointer-events:none;transition:z-index 0.5s;"></canvas>
     
     <div id="main-content">
         <div class="room-info">
@@ -655,190 +691,6 @@
         // Initialize on load
         initBoard();
 
-// --- Retro Arcade Starfield, Spaceship, Asteroids, Bullets ---
-const canvas = document.getElementById('arcade-bg');
-const ctx = canvas.getContext('2d');
-let w = window.innerWidth;
-let h = window.innerHeight;
-canvas.width = w;
-canvas.height = h;
-window.addEventListener('resize', () => {
-    w = window.innerWidth;
-    h = window.innerHeight;
-    canvas.width = w;
-    canvas.height = h;
-});
-// Parallax starfield
-const starLayers = [
-    {count: 40, speed: 0.04, size: 1.2, color: '#fff', stars: []},
-    {count: 30, speed: 0.08, size: 1.7, color: '#0ff', stars: []},
-    {count: 20, speed: 0.13, size: 2.2, color: '#fff', stars: []}
-];
-function initStars() {
-    for (const layer of starLayers) {
-        layer.stars = [];
-        for (let i=0; i<layer.count; ++i) {
-            layer.stars.push({
-                x: Math.random()*w,
-                y: Math.random()*h
-            });
-        }
-    }
-}
-initStars();
-// Spaceship state
-let ship = {
-    x: w/2, y: h-60, vx: 2, size: 48, shootTimer: 0, targetX: w/2
-};
-// Bullets
-let bullets = [];
-function shoot() {
-    bullets.push({x: ship.x, y: ship.y-28, vy: -4, r: 3});
-}
-// Asteroids (retro vector style)
-function randomAsteroid() {
-    const size = 36 + Math.random()*24;
-    const sides = 8 + Math.floor(Math.random()*4);
-    const angle = Math.random()*Math.PI*2;
-    const speed = 0.25 + Math.random()*0.25; // slower asteroids
-    return {
-        x: Math.random()*(w-80)+40,
-        y: -size,
-        vx: (Math.random()-0.5)*0.5,
-        vy: speed,
-        size,
-        angle,
-        sides,
-        shape: Array.from({length: sides}, () => 0.7+Math.random()*0.6)
-    };
-}
-let asteroids = Array.from({length: 2}, randomAsteroid);
-// Spaceship image (classic arcade style from OpenGameArt)
-const spaceshipImg = new Image();
-spaceshipImg.src = 'https://opengameart.org/sites/default/files/ship_0.png';
-function drawStarfield() {
-    for (const layer of starLayers) {
-        ctx.save();
-        ctx.fillStyle = layer.color;
-        for (const s of layer.stars) {
-            ctx.globalAlpha = 0.5 + 0.5*Math.sin(Date.now()/900 + s.x);
-            ctx.beginPath();
-            ctx.arc(s.x, s.y, layer.size, 0, Math.PI*2);
-            ctx.fill();
-            s.y += layer.speed;
-            if (s.y > h) s.y = 0, s.x = Math.random()*w;
-        }
-        ctx.restore();
-    }
-    ctx.globalAlpha = 1;
-}
-function drawSpaceship() {
-    if (!spaceshipImg.complete) return;
-    ctx.save();
-    ctx.translate(ship.x, ship.y);
-    ctx.drawImage(spaceshipImg, -ship.size/2, -ship.size/2, ship.size, ship.size);
-    ctx.restore();
-}
-function drawAsteroids() {
-    for (const a of asteroids) {
-        ctx.save();
-        ctx.translate(a.x, a.y);
-        ctx.rotate(a.angle);
-        ctx.strokeStyle = '#fff';
-        ctx.lineWidth = 2.5;
-        ctx.shadowColor = '#fff';
-        ctx.shadowBlur = 8;
-        ctx.beginPath();
-        for (let i=0; i<a.sides; ++i) {
-            const ang = i*Math.PI*2/a.sides;
-            const r = a.size*a.shape[i];
-            if (i===0) ctx.moveTo(Math.cos(ang)*r, Math.sin(ang)*r);
-            else ctx.lineTo(Math.cos(ang)*r, Math.sin(ang)*r);
-        }
-        ctx.closePath();
-        ctx.stroke();
-        ctx.shadowBlur = 0;
-        ctx.restore();
-    }
-}
-function drawBullets() {
-    ctx.save();
-    for (const b of bullets) {
-        ctx.beginPath();
-        ctx.strokeStyle = '#fff';
-        ctx.lineWidth = 5;
-        ctx.shadowColor = '#0ff';
-        ctx.shadowBlur = 12;
-        ctx.moveTo(b.x, b.y);
-        ctx.lineTo(b.x, b.y - 24);
-        ctx.globalAlpha = 0.95;
-        ctx.stroke();
-        ctx.shadowBlur = 0;
-        ctx.globalAlpha = 1;
-    }
-    ctx.restore();
-}
-function animateArcadeBG() {
-    ctx.clearRect(0,0,w,h);
-    drawStarfield();
-    drawAsteroids();
-    drawSpaceship();
-    drawBullets();
-    // Move asteroids
-    for (const a of asteroids) {
-        a.x += a.vx;
-        a.y += a.vy;
-        a.angle += 0.005;
-        if (a.y > h+80 || a.x < -80 || a.x > w+80) {
-            Object.assign(a, randomAsteroid());
-            a.y = -a.size;
-        }
-    }
-    // Spaceship targets the next asteroid to be destroyed (lowest y)
-    let targetAsteroid = null;
-    let minY = Infinity;
-    for (const a of asteroids) {
-        if (a.y < minY) {
-            minY = a.y;
-            targetAsteroid = a;
-        }
-    }
-    if (targetAsteroid) {
-        ship.targetX = targetAsteroid.x;
-        // Move ship.x toward targetX
-        if (Math.abs(ship.x - ship.targetX) > 2) {
-            ship.x += Math.sign(ship.targetX - ship.x) * ship.vx;
-        }
-        // Only shoot if aligned
-        ship.shootTimer += 1;
-        if (ship.shootTimer > 30 && Math.abs(ship.x - ship.targetX) < 4) {
-            shoot();
-            ship.shootTimer = 0;
-        }
-    }
-    // Move bullets
-    for (const b of bullets) {
-        b.y += b.vy;
-    }
-    // Bullet-asteroid collision
-    for (let i=bullets.length-1; i>=0; --i) {
-        const b = bullets[i];
-        let hit = false;
-        for (let j=asteroids.length-1; j>=0; --j) {
-            const a = asteroids[j];
-            const dx = b.x - a.x, dy = b.y - a.y;
-            if (Math.abs(dx) < a.size*0.7 && b.y < a.y + a.size*0.7 && b.y > a.y - a.size*0.7) {
-                // Remove asteroid and bullet, spawn new asteroid
-                asteroids[j] = randomAsteroid();
-                hit = true;
-                break;
-            }
-        }
-        if (hit || b.y < -20) bullets.splice(i,1);
-    }
-    requestAnimationFrame(animateArcadeBG);
-}
-animateArcadeBG();
-</script>
+    </script>
 </body>
 </html>
