@@ -1,0 +1,841 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Multiplayer Tetris</title>
+    <style>
+        html, body {
+            height: 100%;
+            margin: 0;
+            padding: 0;
+        }
+        body {
+            font-family: 'Orbitron', 'Segoe UI', 'Roboto', Arial, sans-serif;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-start;
+            align-items: center;
+            background: #0a0a23;
+            overflow-x: hidden;
+        }
+        #main-content {
+            flex: 1 0 auto;
+            width: 100vw;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: flex-start;
+            min-height: 0;
+        }
+        /* Starfield animation */
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            z-index: 0;
+            pointer-events: none;
+            background: transparent;
+            animation: starfield 60s linear infinite;
+        }
+        @keyframes starfield {
+            0% { box-shadow:
+                100vw 10vh 1px 1px #fff,
+                80vw 20vh 2px 2px #0ff,
+                60vw 30vh 1px 1px #fff,
+                40vw 40vh 2px 2px #0ff,
+                20vw 50vh 1px 1px #fff,
+                10vw 60vh 2px 2px #0ff;
+            }
+            100% { box-shadow:
+                100vw 110vh 1px 1px #fff,
+                80vw 120vh 2px 2px #0ff,
+                60vw 130vh 1px 1px #fff,
+                40vw 140vh 2px 2px #0ff,
+                20vw 150vh 1px 1px #fff,
+                10vw 160vh 2px 2px #0ff;
+            }
+        }
+        /* Spaceship animation (CSS only, subtle) */
+        .spaceship {
+            position: fixed;
+            left: 50%;
+            bottom: 10vh;
+            width: 80px;
+            height: 80px;
+            z-index: 1;
+            transform: translateX(-50%);
+            animation: spaceship-float 4s ease-in-out infinite;
+            opacity: 0.7;
+        }
+        @keyframes spaceship-float {
+            0%, 100% { transform: translateX(-50%) translateY(0); }
+            50% { transform: translateX(-50%) translateY(-20px); }
+        }
+        .spaceship-body {
+            width: 80px; height: 40px;
+            background: linear-gradient(90deg, #0ff 0%, #fff 100%);
+            border-radius: 40px 40px 20px 20px;
+            position: absolute; bottom: 0; left: 0;
+            box-shadow: 0 0 30px 10px #0ff8, 0 0 10px 2px #fff8;
+        }
+        .spaceship-cockpit {
+            width: 24px; height: 24px;
+            background: #fff;
+            border-radius: 50%;
+            position: absolute; left: 28px; top: 2px;
+            box-shadow: 0 0 10px 2px #0ff8;
+        }
+        .spaceship-flame {
+            width: 16px; height: 32px;
+            background: linear-gradient(180deg, #ff0 0%, #f00 100%);
+            border-radius: 50% 50% 60% 60%/60% 60% 100% 100%;
+            position: absolute; left: 32px; bottom: -24px;
+            opacity: 0.7;
+            filter: blur(1px);
+            animation: flame-flicker 0.3s infinite alternate;
+        }
+        @keyframes flame-flicker {
+            0% { opacity: 0.7; height: 32px; }
+            100% { opacity: 1; height: 40px; }
+        }
+        h1 {
+            font-size: 3rem;
+            font-weight: 900;
+            text-align: center;
+            margin-bottom: 24px;
+            color: #0ff;
+            text-shadow: 0 0 16px #0ff, 0 0 32px #fff, 2px 2px 8px #222;
+            letter-spacing: 2px;
+            font-family: 'Orbitron', 'Segoe UI', 'Roboto', Arial, sans-serif;
+        }
+        h3 {
+            font-size: 1.5rem;
+            font-weight: 700;
+            margin-bottom: 10px;
+            color: #fff;
+            text-shadow: 0 0 8px #0ff, 0 0 4px #fff;
+        }
+        .container {
+            display: flex;
+            gap: 20px;
+            justify-content: center;
+            align-items: flex-start;
+            min-height: 0;
+            width: 1100px;
+            max-width: 98vw;
+            margin-bottom: 16px;
+        }
+        .game-area, .player-list, .room-info {
+            max-width: 100%;
+            box-sizing: border-box;
+        }
+        .game-area {
+            min-width: 400px;
+            max-width: 400px;
+        }
+        .game-area, .player-list, .room-info {
+            background: rgba(10, 10, 40, 0.85);
+            border: 2px solid #0ff;
+            border-radius: 16px;
+            box-shadow: 0 0 24px 4px #0ff4, 0 0 8px 2px #fff4;
+            padding: 18px;
+            margin-bottom: 10px;
+            transition: box-shadow 0.3s, background 0.3s;
+        }
+        .game-area:hover, .player-list:hover, .room-info:hover {
+            box-shadow: 0 0 48px 8px #0ff8, 0 0 16px 4px #fff8;
+            background: rgba(10, 10, 60, 0.95);
+        }
+        .board {
+            border: 2px solid #0ff;
+            background-color: #000a;
+            display: inline-block;
+            width: 360px;
+            box-sizing: content-box;
+            padding: 0;
+            margin: 0 auto;
+            border-radius: 8px;
+            box-shadow: 0 0 16px 2px #0ff8;
+        }
+        .board-row {
+            display: flex;
+            padding: 0;
+            margin: 0;
+        }
+        .board-cell {
+            width: 34px;
+            height: 34px;
+            border: 1px solid #333;
+            background-color: #000;
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            transition: background 0.2s;
+        }
+        .board-cell.filled {
+            background-color: #0ff;
+            box-shadow: 0 0 8px 2px #0ff8;
+        }
+        .board-cell.current {
+            background-color: #fff;
+            box-shadow: 0 0 12px 4px #fff8;
+        }
+        .controls button {
+            margin: 4px;
+            padding: 12px 24px;
+            font-size: 22px;
+            font-weight: 700;
+            background: linear-gradient(90deg, #0ff 0%, #00f 100%);
+            color: #fff;
+            border: none;
+            border-radius: 8px;
+            box-shadow: 0 0 8px 2px #0ff8;
+            cursor: pointer;
+            transition: background 0.2s, box-shadow 0.2s;
+        }
+        .controls button:hover {
+            background: linear-gradient(90deg, #fff 0%, #0ff 100%);
+            color: #0ff;
+            box-shadow: 0 0 16px 4px #0ff8;
+        }
+        .log {
+            background-color: #000a;
+            color: #0ff;
+            padding: 16px;
+            max-height: 220px;
+            min-height: 120px;
+            overflow-y: auto;
+            font-family: 'Share Tech Mono', monospace;
+            border-radius: 8px;
+            margin: 0 auto 16px auto;
+            width: 1100px;
+            max-width: 98vw;
+            box-sizing: border-box;
+            display: block;
+            font-size: 18px;
+            border: 2px solid #0ff;
+            box-shadow: 0 0 16px 2px #0ff8;
+            flex-shrink: 0;
+        }
+        #logContent {
+            height: 100%;
+            max-height: 180px;
+            overflow-y: auto;
+        }
+        input, button {
+            margin: 2px;
+            padding: 5px;
+            border-radius: 6px;
+            border: 1px solid #0ff;
+            background: #111a;
+            color: #0ff;
+            font-size: 18px;
+            font-family: 'Orbitron', 'Segoe UI', 'Roboto', Arial, sans-serif;
+            box-shadow: 0 0 4px 1px #0ff4;
+            transition: border 0.2s, box-shadow 0.2s;
+        }
+        input:focus, button:focus {
+            outline: none;
+            border: 2px solid #fff;
+            box-shadow: 0 0 8px 2px #fff8;
+        }
+        .error {
+            color: #f55;
+            font-weight: bold;
+            text-shadow: 0 0 4px #f008;
+        }
+        .success {
+            color: #0f0;
+            font-weight: bold;
+            text-shadow: 0 0 4px #0f08;
+        }
+        .game-info {
+            background-color: #000a;
+            padding: 18px;
+            border-radius: 8px;
+            margin-top: 18px;
+            font-size: 22px;
+            font-weight: 600;
+            color: #0ff;
+            border: 2px solid #0ff;
+            box-shadow: 0 0 12px 2px #0ff8;
+        }
+        .level-info {
+            font-size: 32px;
+            font-weight: 900;
+            color: #fff;
+            letter-spacing: 1px;
+            margin-bottom: 8px;
+            text-shadow: 0 0 8px #0ff, 0 0 4px #fff;
+        }
+        .player-list {
+            background: rgba(10, 10, 40, 0.92);
+            border: 2px solid #0ff;
+            border-radius: 16px;
+            box-shadow: 0 0 24px 4px #0ff4, 0 0 8px 2px #fff4;
+            padding: 18px;
+            margin-bottom: 10px;
+            color: #fff;
+            font-size: 1.1rem;
+            font-family: 'Orbitron', 'Segoe UI', 'Roboto', Arial, sans-serif;
+            text-shadow: 0 0 6px #0ff, 0 0 2px #fff;
+        }
+        #playersList div {
+            background: rgba(0,0,0,0.35);
+            border-radius: 8px;
+            margin-bottom: 8px;
+            padding: 8px 12px;
+            color: #fff;
+            font-weight: 600;
+            box-shadow: 0 0 8px 1px #0ff3;
+        }
+        @media (max-width: 1200px) {
+            .container, .log {
+                width: 98vw;
+                max-width: 98vw;
+            }
+        }
+        @media (max-width: 800px) {
+            .container {
+                flex-direction: column;
+                align-items: center;
+                width: 100vw;
+            }
+            .game-area, .player-list, .room-info {
+                max-width: 98vw;
+                min-width: 0;
+            }
+        }
+    </style>
+</head>
+<body>
+    <h1>Multiplayer Tetris</h1>
+    <!-- Arcade animated background canvas -->
+    <canvas id="arcade-bg" style="position:fixed;top:0;left:0;width:100vw;height:100vh;z-index:-1;pointer-events:none;transition:z-index 0.5s;"></canvas>
+    
+    <div id="main-content">
+        <div class="room-info">
+            <h3>Room Management</h3>
+            <input type="text" id="playerName" placeholder="Player Name" value="Player1">
+            <button onclick="connect()">Connect</button>
+            <button onclick="createRoom()">Create Room</button>
+            <input type="number" id="timeLimitInput" placeholder="Time Limit (sec)" min="30" max="600" value="120" style="width:140px;">
+            <input type="text" id="roomId" placeholder="Room ID">
+            <button onclick="joinRoom()">Join Room</button>
+            <button onclick="startGame()">Start Game</button>
+            <div id="roomStatus">Not connected</div>
+        </div>
+
+        <div class="container">
+            <div class="game-area">
+                <h3>Your Board</h3>
+                <div id="gameBoard" class="board"></div>
+                <div class="controls">
+                    <button onclick="moveLeft()" title="Left (←)">←</button>
+                    <button onclick="moveRight()" title="Right (→)">→</button>
+                    <button onclick="moveDown()" title="Down (↓)">↓</button>
+                    <button onclick="rotate()" title="Rotate (↑)">⟳</button>
+                    <button onclick="hardDrop()" title="Hard Drop (Space)">⎵</button>
+                </div>
+                <div class="game-info">
+                    <div class="level-info">Level: <span id="level">1</span></div>
+                    Score: <span id="score">0</span><br>
+                    Lines: <span id="lines">0</span><br>
+                    Garbage: <span id="garbage">0</span><br>
+                    Drop Speed: <span id="dropSpeed">1.0s</span><br>
+                    <span id="timerBox"></span>
+                </div>
+            </div>
+
+            <div class="player-list">
+                <h3>Players</h3>
+                <div id="playersList"></div>
+            </div>
+        </div>
+    </div>
+
+    <div class="log">
+        <div id="logContent"></div>
+    </div>
+
+    <script>
+        let ws;
+        let playerId;
+        let currentRoom;
+        let gameBoard = [];
+        let currentPiece = null;
+        let gameState = 'waiting';
+        let currentLevel = 1;
+        let dropInterval = 1.0;
+
+        function log(message, type = 'info') {
+            const logDiv = document.getElementById('logContent');
+            const timestamp = new Date().toLocaleTimeString();
+            const className = type === 'error' ? 'error' : type === 'success' ? 'success' : '';
+            logDiv.innerHTML += `<div class="${className}">${timestamp}: ${message}</div>`;
+            logDiv.scrollTop = logDiv.scrollHeight;
+        }
+
+        function connect() {
+            playerId = document.getElementById('playerName').value || 'Player' + Math.random().toString(36).substr(2, 5);
+            
+            // For development, connect to localhost:8000
+            // For production, use the current host
+            let wsUrl;
+            if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
+                wsUrl = `ws://localhost:8000/ws/${playerId}`;
+            } else {
+                const wsScheme = window.location.protocol === "https:" ? "wss" : "ws";
+                const wsHost = window.location.host; 
+                wsUrl = `${wsScheme}://${wsHost}/ws/${playerId}`;
+            }
+            
+            ws = new WebSocket(wsUrl);
+            console.log("Connecting to WebSocket at:", wsUrl);
+            
+            ws.onopen = () => {
+                log('Connected to server.', 'success');
+                document.getElementById('roomStatus').textContent = 'Connected';
+            };
+            
+            ws.onmessage = (event) => {
+                const message = JSON.parse(event.data);
+                handleMessage(message);
+            };
+            
+            ws.onclose = () => {
+                log('Disconnected from server', 'error');
+                document.getElementById('roomStatus').textContent = 'Disconnected';
+            };
+
+            ws.onerror = (error) => {
+                log('WebSocket error: ' + error, 'error');
+            };
+        }
+
+        function handleMessage(message) {
+            // Only show user-friendly, essential log messages
+            switch(message.type) {
+                case 'connection':
+                    log('Connected to server.', 'success');
+                    break;
+                case 'room_created':
+                    currentRoom = message.room_id;
+                    log(`Room created. Room ID: <b>${currentRoom}</b>`, 'success');
+                    updateRoomState(message.room_state);
+                    break;
+                case 'room_joined':
+                    currentRoom = message.room_id;
+                    log(`Joined room: <b>${currentRoom}</b>`, 'success');
+                    updateRoomState(message.room_state);
+                    break;
+                case 'room_update':
+                    updateRoomState(message.room_state);
+                    break;
+                case 'game_started':
+                    gameState = 'playing';
+                    log('Game started!', 'success');
+                    updateRoomState(message.room_state);
+                    break;
+                case 'game_update':
+                    updateRoomState(message.room_state);
+                    break;
+                case 'move_result':
+                    updateGameState(message.result.player_state);
+                    break;
+                case 'player_move':
+                    // Optionally, show a simple message
+                    // log('Another player made a move.');
+                    break;
+                case 'game_over':
+                    gameState = 'finished';
+                    let winnerMsg = '';
+                    if (message.winner_id) {
+                        winnerMsg = (message.winner_id === playerId)
+                            ? 'Congratulations! You won!'
+                            : `Game Over! Winner: <b>${message.winner_id}</b>`;
+                    } else {
+                        winnerMsg = 'Game Over! No winner.';
+                    }
+                    log(winnerMsg, 'success');
+                    alert(winnerMsg.replace(/<[^>]+>/g, ''));
+                    break;
+                case 'error':
+                    log('Error: ' + message.message, 'error');
+                    break;
+            }
+        }
+
+        function createRoom() {
+            if (!ws || ws.readyState !== WebSocket.OPEN) {
+                log('Not connected', 'error');
+                return;
+            }
+            const timeLimit = parseInt(document.getElementById('timeLimitInput').value, 10) || 120;
+            ws.send(JSON.stringify({
+                type: 'create_room',
+                max_players: 4,
+                time_limit_seconds: timeLimit
+            }));
+        }
+
+        function joinRoom() {
+            if (!ws || ws.readyState !== WebSocket.OPEN) {
+                log('Not connected', 'error');
+                return;
+            }
+            const roomId = document.getElementById('roomId').value.trim();
+            if (!roomId) {
+                log('Enter room ID', 'error');
+                return;
+            }
+            ws.send(JSON.stringify({
+                type: 'join_room',
+                room_id: roomId
+            }));
+        }
+
+        function startGame() {
+            if (!ws || ws.readyState !== WebSocket.OPEN) {
+                log('Not connected', 'error');
+                return;
+            }
+            ws.send(JSON.stringify({
+                type: 'start_game'
+            }));
+        }
+
+        function sendMove(moveType, data = {}) {
+            if (!ws || ws.readyState !== WebSocket.OPEN) {
+                log('Not connected', 'error');
+                return;
+            }
+            if (gameState !== 'playing') {
+                log('Cannot move - not in game', 'error');
+                return;
+            }
+            ws.send(JSON.stringify({
+                type: 'game_move',
+                move: {
+                    type: moveType,
+                    ...data
+                }
+            }));
+        }
+
+        function moveLeft() { sendMove('move', {dx: -1}); }
+        function moveRight() { sendMove('move', {dx: 1}); }
+        function moveDown() { sendMove('soft_drop'); }
+        function rotate() { sendMove('rotate'); }
+        function hardDrop() { sendMove('hard_drop'); }
+        function hold() { sendMove('hold'); }
+
+        // Keyboard controls
+        document.addEventListener('keydown', function(event) {
+            if (gameState !== 'playing') return;
+            
+            switch(event.key) {
+                case 'ArrowLeft':
+                    event.preventDefault();
+                    moveLeft();
+                    break;
+                case 'ArrowRight':
+                    event.preventDefault();
+                    moveRight();
+                    break;
+                case 'ArrowDown':
+                    event.preventDefault();
+                    moveDown();
+                    break;
+                case 'ArrowUp':
+                case ' ':
+                    event.preventDefault();
+                    rotate();
+                    break;
+                case 'Enter':
+                    event.preventDefault();
+                    hardDrop();
+                    break;
+                case 'c':
+                case 'C':
+                    event.preventDefault();
+                    hold();
+                    break;
+            }
+        });
+
+        function updateRoomState(roomState) {
+            const playersList = document.getElementById('playersList');
+            playersList.innerHTML = '';
+            
+            for (const [playerId, playerData] of Object.entries(roomState.players)) {
+                const playerDiv = document.createElement('div');
+                playerDiv.innerHTML = `
+                    <strong>${playerId}</strong><br>
+                    Level: ${playerData.board_state.level}<br>
+                    Score: ${playerData.board_state.score}<br>
+                    Lines: ${playerData.board_state.lines_cleared}<br>
+                    State: ${playerData.board_state.game_state}
+                `;
+                playersList.appendChild(playerDiv);
+            }
+
+            // Update current player's game state
+            if (playerId && roomState.players[playerId]) {
+                updateGameState(roomState.players[playerId].board_state);
+            }
+            // Update timer display if present
+            const timerBox = document.getElementById('timerBox');
+            if (timerBox && typeof roomState.remaining_time !== 'undefined') {
+                timerBox.textContent = `Time left: ${roomState.remaining_time}s`;
+            } else if (timerBox) {
+                timerBox.textContent = '';
+            }
+        }
+
+        function updateGameState(boardState) {
+            gameBoard = boardState.board;
+            currentPiece = boardState.current_piece;
+            currentLevel = boardState.level;
+            dropInterval = boardState.drop_interval;
+            
+            // Update display
+            document.getElementById('score').textContent = boardState.score;
+            document.getElementById('lines').textContent = boardState.lines_cleared;
+            document.getElementById('garbage').textContent = boardState.garbage_lines;
+            document.getElementById('level').textContent = boardState.level;
+            document.getElementById('dropSpeed').textContent = boardState.drop_interval.toFixed(1) + 's';
+            
+            renderBoard();
+        }
+
+        function renderBoard() {
+            const boardDiv = document.getElementById('gameBoard');
+            boardDiv.innerHTML = '';
+            for (let y = 0; y < 20; y++) { // Always 20 rows
+                const row = document.createElement('div');
+                row.className = 'board-row';
+                for (let x = 0; x < 10; x++) { // Always 10 columns
+                    const cell = document.createElement('div');
+                    cell.className = 'board-cell';
+                    if (gameBoard[y] && gameBoard[y][x]) {
+                        cell.classList.add('filled');
+                    }
+                    // Draw current piece
+                    if (currentPiece) {
+                        const pieceShape = currentPiece.shape;
+                        const pieceX = currentPiece.x;
+                        const pieceY = currentPiece.y;
+                        for (let py = 0; py < pieceShape.length; py++) {
+                            for (let px = 0; px < pieceShape[py].length; px++) {
+                                if (pieceShape[py][px] &&
+                                    y === pieceY + py &&
+                                    x === pieceX + px) {
+                                    cell.classList.add('current');
+                                }
+                            }
+                        }
+                    }
+                    row.appendChild(cell);
+                }
+                boardDiv.appendChild(row);
+            }
+        }
+
+        // Initialize board
+        function initBoard() {
+            gameBoard = Array(20).fill().map(() => Array(10).fill(0));
+            renderBoard();
+        }
+
+        // Initialize on load
+        initBoard();
+
+// --- Retro Arcade Starfield, Spaceship, Asteroids, Bullets ---
+const canvas = document.getElementById('arcade-bg');
+const ctx = canvas.getContext('2d');
+let w = window.innerWidth;
+let h = window.innerHeight;
+canvas.width = w;
+canvas.height = h;
+window.addEventListener('resize', () => {
+    w = window.innerWidth;
+    h = window.innerHeight;
+    canvas.width = w;
+    canvas.height = h;
+});
+// Parallax starfield
+const starLayers = [
+    {count: 40, speed: 0.04, size: 1.2, color: '#fff', stars: []},
+    {count: 30, speed: 0.08, size: 1.7, color: '#0ff', stars: []},
+    {count: 20, speed: 0.13, size: 2.2, color: '#fff', stars: []}
+];
+function initStars() {
+    for (const layer of starLayers) {
+        layer.stars = [];
+        for (let i=0; i<layer.count; ++i) {
+            layer.stars.push({
+                x: Math.random()*w,
+                y: Math.random()*h
+            });
+        }
+    }
+}
+initStars();
+// Spaceship state
+let ship = {
+    x: w/2, y: h-60, vx: 2, size: 48, shootTimer: 0, targetX: w/2
+};
+// Bullets
+let bullets = [];
+function shoot() {
+    bullets.push({x: ship.x, y: ship.y-28, vy: -4, r: 3});
+}
+// Asteroids (retro vector style)
+function randomAsteroid() {
+    const size = 36 + Math.random()*24;
+    const sides = 8 + Math.floor(Math.random()*4);
+    const angle = Math.random()*Math.PI*2;
+    const speed = 0.25 + Math.random()*0.25; // slower asteroids
+    return {
+        x: Math.random()*(w-80)+40,
+        y: -size,
+        vx: (Math.random()-0.5)*0.5,
+        vy: speed,
+        size,
+        angle,
+        sides,
+        shape: Array.from({length: sides}, () => 0.7+Math.random()*0.6)
+    };
+}
+let asteroids = Array.from({length: 2}, randomAsteroid);
+// Spaceship image (classic arcade style from OpenGameArt)
+const spaceshipImg = new Image();
+spaceshipImg.src = 'https://opengameart.org/sites/default/files/ship_0.png';
+function drawStarfield() {
+    for (const layer of starLayers) {
+        ctx.save();
+        ctx.fillStyle = layer.color;
+        for (const s of layer.stars) {
+            ctx.globalAlpha = 0.5 + 0.5*Math.sin(Date.now()/900 + s.x);
+            ctx.beginPath();
+            ctx.arc(s.x, s.y, layer.size, 0, Math.PI*2);
+            ctx.fill();
+            s.y += layer.speed;
+            if (s.y > h) s.y = 0, s.x = Math.random()*w;
+        }
+        ctx.restore();
+    }
+    ctx.globalAlpha = 1;
+}
+function drawSpaceship() {
+    if (!spaceshipImg.complete) return;
+    ctx.save();
+    ctx.translate(ship.x, ship.y);
+    ctx.drawImage(spaceshipImg, -ship.size/2, -ship.size/2, ship.size, ship.size);
+    ctx.restore();
+}
+function drawAsteroids() {
+    for (const a of asteroids) {
+        ctx.save();
+        ctx.translate(a.x, a.y);
+        ctx.rotate(a.angle);
+        ctx.strokeStyle = '#fff';
+        ctx.lineWidth = 2.5;
+        ctx.shadowColor = '#fff';
+        ctx.shadowBlur = 8;
+        ctx.beginPath();
+        for (let i=0; i<a.sides; ++i) {
+            const ang = i*Math.PI*2/a.sides;
+            const r = a.size*a.shape[i];
+            if (i===0) ctx.moveTo(Math.cos(ang)*r, Math.sin(ang)*r);
+            else ctx.lineTo(Math.cos(ang)*r, Math.sin(ang)*r);
+        }
+        ctx.closePath();
+        ctx.stroke();
+        ctx.shadowBlur = 0;
+        ctx.restore();
+    }
+}
+function drawBullets() {
+    ctx.save();
+    for (const b of bullets) {
+        ctx.beginPath();
+        ctx.strokeStyle = '#fff';
+        ctx.lineWidth = 5;
+        ctx.shadowColor = '#0ff';
+        ctx.shadowBlur = 12;
+        ctx.moveTo(b.x, b.y);
+        ctx.lineTo(b.x, b.y - 24);
+        ctx.globalAlpha = 0.95;
+        ctx.stroke();
+        ctx.shadowBlur = 0;
+        ctx.globalAlpha = 1;
+    }
+    ctx.restore();
+}
+function animateArcadeBG() {
+    ctx.clearRect(0,0,w,h);
+    drawStarfield();
+    drawAsteroids();
+    drawSpaceship();
+    drawBullets();
+    // Move asteroids
+    for (const a of asteroids) {
+        a.x += a.vx;
+        a.y += a.vy;
+        a.angle += 0.005;
+        if (a.y > h+80 || a.x < -80 || a.x > w+80) {
+            Object.assign(a, randomAsteroid());
+            a.y = -a.size;
+        }
+    }
+    // Spaceship targets the next asteroid to be destroyed (lowest y)
+    let targetAsteroid = null;
+    let minY = Infinity;
+    for (const a of asteroids) {
+        if (a.y < minY) {
+            minY = a.y;
+            targetAsteroid = a;
+        }
+    }
+    if (targetAsteroid) {
+        ship.targetX = targetAsteroid.x;
+        // Move ship.x toward targetX
+        if (Math.abs(ship.x - ship.targetX) > 2) {
+            ship.x += Math.sign(ship.targetX - ship.x) * ship.vx;
+        }
+        // Only shoot if aligned
+        ship.shootTimer += 1;
+        if (ship.shootTimer > 30 && Math.abs(ship.x - ship.targetX) < 4) {
+            shoot();
+            ship.shootTimer = 0;
+        }
+    }
+    // Move bullets
+    for (const b of bullets) {
+        b.y += b.vy;
+    }
+    // Bullet-asteroid collision
+    for (let i=bullets.length-1; i>=0; --i) {
+        const b = bullets[i];
+        let hit = false;
+        for (let j=asteroids.length-1; j>=0; --j) {
+            const a = asteroids[j];
+            const dx = b.x - a.x, dy = b.y - a.y;
+            if (Math.abs(dx) < a.size*0.7 && b.y < a.y + a.size*0.7 && b.y > a.y - a.size*0.7) {
+                // Remove asteroid and bullet, spawn new asteroid
+                asteroids[j] = randomAsteroid();
+                hit = true;
+                break;
+            }
+        }
+        if (hit || b.y < -20) bullets.splice(i,1);
+    }
+    requestAnimationFrame(animateArcadeBG);
+}
+animateArcadeBG();
+</script>
+</body>
+</html>
