@@ -2,11 +2,11 @@
 
 A modern implementation of the classic Tetris game built with a full-stack architecture, featuring a Python backend and HTML/CSS/JavaScript frontend. This project demonstrates game development principles, real-time communication, and responsive web design.
 
-## 🎮 Game Overview
+## Game Overview
 
 Tetris is a tile-matching puzzle game where players must arrange falling tetromino pieces to create complete horizontal lines. When lines are completed, they disappear, and the player earns points. The game increases in speed as the player progresses.
 
-## 🏗️ Architecture
+## Architecture
 
 This project follows a full-stack architecture with clear separation of concerns:
 
@@ -24,7 +24,7 @@ tetris-main/
 - **Communication**: WebSocket/HTTP API
 - **Development**: VS Code configuration included
 
-## 🚀 Features
+## Features
 
 ### Core Game Features
 - **Classic Tetris Gameplay**: Authentic tetromino pieces and mechanics
@@ -42,37 +42,37 @@ tetris-main/
 - **Modern UI**: Clean, responsive design
 - **Development Ready**: VS Code configuration for easy setup
 
-## 📁 Project Structure
+## Project Structure
 
 ```
 tetris-main/
-├── 🔧 Backend (Python)
+├── Backend (Python)
 │   ├── Game engine logic
 │   ├── Server implementation
 │   ├── API endpoints
 │   └── Game state management
 │
-├── 🎨 Frontend (HTML/CSS/JS)
+├── Frontend (HTML/CSS/JS)
 │   ├── Game UI components
 │   ├── Styling and animations
 │   ├── User input handling
 │   └── Client-server communication
 │
-└── ⚙️ Development
+└── Development
     └── .vscode/              # VS Code workspace configuration
         ├── settings.json     # Editor preferences
         ├── launch.json       # Debug configuration
         └── extensions.json   # Recommended extensions
 ```
 
-## 🛠️ Prerequisites
+## Prerequisites
 
 - **Python 3.7+**: For backend server
 - **Modern Web Browser**: Chrome, Firefox, Safari, or Edge
 - **VS Code** (Optional): For development with included configuration
 - **Web Server**: For serving the frontend files
 
-## 🚀 Installation & Setup
+## Installation & Setup
 
 ### 1. Clone the Repository
 ```bash
@@ -112,7 +112,7 @@ The project includes VS Code configuration for optimal development experience:
 - **Recommended Extensions**: Python, HTML/CSS/JS support
 - **Workspace Settings**: Optimized for game development
 
-## 🎯 How to Play
+## How to Play
 
 ### Game Controls
 - **Arrow Keys**: Move and rotate tetromino pieces
@@ -129,7 +129,7 @@ The project includes VS Code configuration for optimal development experience:
 3. **Levels**: Game speed increases every 10 lines cleared
 4. **Game Over**: When pieces reach the top of the playing field
 
-## 🔧 Development
+## Development
 
 ### Backend Development
 The Python backend handles:
@@ -154,7 +154,7 @@ The included `.vscode` configuration provides:
 - **Extensions**: Recommended extensions for Python and web development
 - **Settings**: Optimized editor settings for game development
 
-## 🎨 Customization
+## Customization
 
 ### Game Mechanics
 - **Speed Settings**: Adjust fall speed and level progression
@@ -167,7 +167,7 @@ The included `.vscode` configuration provides:
 - **Responsive Design**: Adapt layout for different devices
 - **Theme Support**: Implement light/dark mode themes
 
-## 🧪 Testing
+## Testing
 
 ### Backend Testing
 ```bash
@@ -180,7 +180,7 @@ python -m pytest tests/  # If test files exist
 - Responsive design testing on various devices
 - Performance testing for smooth gameplay
 
-## 📦 Deployment
+## Deployment
 
 ### Local Deployment
 1. Start the Python backend server
@@ -192,7 +192,7 @@ python -m pytest tests/  # If test files exist
 2. **Frontend**: Deploy static files to CDN or web hosting service
 3. **Configuration**: Update API endpoints for production URLs
 
-## 🤝 Contributing
+## Contributing
 
 We welcome contributions! Here's how you can help:
 
@@ -248,22 +248,17 @@ If you find a bug, please create an issue with:
 - [ ] **WebSocket Communication**: Real-time multiplayer support
 - [ ] **Progressive Web App**: Offline gameplay capability
 
-## 📄 License
+## License
 
 This project is open source and available under the [MIT License](LICENSE).
 
-## 👨‍💻 Author
+## Author
 
 **Dharaneesh**
 - GitHub: [@dharaneesh-2005](https://github.com/dharaneesh-2005)
 
-## 🙏 Acknowledgments
 
-- **Tetris Company**: For creating the iconic puzzle game
-- **Open Source Community**: For inspiration and collaboration
-- **Contributors**: Thanks to all who help improve this project
-
-## 📞 Support
+## Support
 
 - **Issues**: [GitHub Issues](https://github.com/dharaneesh-2005/tetris-main/issues)
 - **Discussions**: [GitHub Discussions](https://github.com/dharaneesh-2005/tetris-main/discussions)
