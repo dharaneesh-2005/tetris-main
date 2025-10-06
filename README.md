@@ -222,7 +222,7 @@ We welcome contributions! Here's how you can help:
    - Include screenshots if applicable
    - Reference any related issues
 
-## 🐛 Bug Reports
+## Bug Reports
 
 If you find a bug, please create an issue with:
 - **Description**: Clear explanation of the problem
@@ -231,22 +231,22 @@ If you find a bug, please create an issue with:
 - **Actual Behavior**: What actually happens
 - **Environment**: Browser, OS, and version information
 
-## 📈 Future Enhancements
+## Future Enhancements
 
 ### Planned Features
-- [ ] **Multiplayer Mode**: Real-time multiplayer gameplay
-- [ ] **Leaderboards**: Global high score tracking
-- [ ] **Sound Effects**: Audio feedback and background music
-- [ ] **Mobile Support**: Touch controls for mobile devices
-- [ ] **Game Modes**: Sprint, Ultra, and other Tetris variants
-- [ ] **Customization**: User-defined themes and settings
-- [ ] **AI Opponent**: Computer-controlled player option
+**Multiplayer Mode**: Real-time multiplayer gameplay
+**Leaderboards**: Global high score tracking
+**Sound Effects**: Audio feedback and background music
+**Mobile Support**: Touch controls for mobile devices
+**Game Modes**: Sprint, Ultra, and other Tetris variants
+**Customization**: User-defined themes and settings
+**AI Opponent**: Computer-controlled player option
 
 ### Technical Improvements
-- [ ] **Performance Optimization**: Better rendering and memory usage
-- [ ] **Database Integration**: Persistent score storage
-- [ ] **WebSocket Communication**: Real-time multiplayer support
-- [ ] **Progressive Web App**: Offline gameplay capability
+**Performance Optimization**: Better rendering and memory usage
+**Database Integration**: Persistent score storage
+**WebSocket Communication**: Real-time multiplayer support
+**Progressive Web App**: Offline gameplay capability
 
 ## License
 
